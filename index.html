@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix · Profound, Obelisco concept</title>
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <style>
+        :root { 
+            --text-white: #e5e7eb;
+            --orange: #ff6900;
+            --text-secondary: #9f9f9f; 
+            --size: 2000px;
+            --font-inter: InterVariable, Inter, sans-serif, SF Pro Display, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif;
+            font-family: var(--font-inter);
+            font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+            font-variation-settings: normal;
+            font-size: 1rem;
+        }
+        *, :after, :before {
+            box-sizing: border-box;
+            border: 0 solid;
+            margin: 0;
+            padding: 0;
+        }
+        html, :host {
+            -webkit-text-size-adjust: 100%;
+            tab-size: 4;
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: var(--font-inter); }
+        body {
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-font-smoothing: antialiased;
+            -webkit-text-size-adjust: none;
+            -ms-text-size-adjust: none;
+            text-rendering: optimizelegibility;
+        }
+        button,input,select,optgroup,textarea {
+            font: inherit;
+            font-feature-settings: inherit;
+            font-variation-settings: inherit;
+            letter-spacing: inherit;
+            color: inherit;
+            opacity: 1;
+            background-color: #0000;
+            border-radius: 0
+        }
+        .main { width: 100vw; height: 100vh; }
+        .wrapper { width: 100%; height: 100%; }
+        .container { 
+            width: 100%; max-width: 1088px; height: 100%; 
+            margin: 0 auto; padding: 16px; position: relative;
+            border: none;
+        }
+        .dashed { 
+            width: 1px; height: 100%; position: absolute; z-index: 1;
+            background-size: 2px 12px; 
+            background-image: linear-gradient(#232323, #232323 50%, #0000 0, #0000);
+        }
+        .dashed.dashed-left { left: 0; }
+        .dashed.dashed-right { right: 0; }
+        #matrix { position: absolute; top: 5%; right: -70%; width: var(--size); height: auto; display: block; }
+        #ui {
+            position: fixed; top: 16px; right: 16px; z-index: 10;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace;
+            color: #9aa0a6; font-size: 11px; letter-spacing: 0.04em;
+            background: rgba(10,10,12,0.72); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+            padding: 14px 16px; width: 300px; user-select: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        #ui.hidden { opacity: 0; transform: translateX(12px); pointer-events: none; }
+        #toggle {
+            position: fixed; top: 16px; right: 16px; z-index: 11;
+            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 14px;
+            color: #e8eaed; cursor: pointer; user-select: none;
+            background: rgba(10,10,12,0.72); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            transition: opacity 0.18s ease;
+        }
+        #toggle:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+        #ui:not(.hidden) ~ #toggle { opacity: 0; pointer-events: none; }
+        #ui h1 { font-size: 11px; font-weight: 600; margin: 0 0 12px; color: #e8eaed; letter-spacing: 0.12em; text-transform: uppercase; display: flex; align-items: center; justify-content: left; }
+        #ui h1 .close { cursor: pointer; color: #6b7075; font-weight: 400; font-size: 18px; line-height: 1; padding: 0 2px; margin-left: auto; }
+        #ui h1 .close:hover { color: #fff; }
+        #ui h1 > span { padding-left: 4px;}
+        #ui h1 span { color: var(--text-white); opacity: 0.55; }
+        .row { display: flex; align-items: center; justify-content: space-between; margin: 9px 0; gap: 10px; }
+        .row label { white-space: nowrap; }
+        .row input[type=range] { flex: 1; accent-color: var(--text-white); height: 2px; }
+        .val { color: #e8eaed; width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+        .hint { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.07); color: #6b7075; line-height: 1.5; }
+
+        /* ── Texto: barrida izq→der con blur que se enfoca ── */
+        .reveal-wrap {
+            position: relative;
+            display: flex;
+            flex-flow: row;
+            gap: 1rem;
+            padding: 96px 4px;
+        }
+        .reveal-text {
+            position: relative;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            font-family: var(--font-inter);
+            letter-spacing: -1.08px;
+            font-size: 48px;
+            font-weight: 500;
+            line-height: 56px;
+            color: #f2f4f5; white-space: nowrap;
+            /* gradiente fijo de doble ancho: animamos su POSICIÓN para barrer */
+            -webkit-mask-image: linear-gradient(90deg, #000 48%, transparent 56%);
+                    mask-image: linear-gradient(90deg, #000 48%, transparent 56%);
+            -webkit-mask-size: 210% 100%; mask-size: 210% 100%;
+            -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+            -webkit-mask-position: 100% 0; mask-position: 100% 0;
+            opacity: 0; filter: blur(12px);
+            animation: revealSweep 1.5s cubic-bezier(0.33, 0, 0.3, 1) forwards;
+        }
+        .text-secondary { color: var(--text-secondary); }
+
+        /* Ángulo animable para el borde giratorio */
+        @property --bd-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+        .reveal-date {
+            position: relative;
+            width: 67px; height: 56px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1.2;
+            color: var(--text-white);
+            border-radius: 16px;
+            font-size: 38px; font-weight: 500;
+            opacity: 0; transform: scale(0.92);
+            animation: dateIn 0.85s cubic-bezier(0.33, 0, 0.3, 1) 1.25s forwards;
+        }
+        /* capa del borde: cónico naranja que gira en sentido horario,
+           recortada con mask para que solo se vea el contorno */
+        .reveal-date::before {
+            content: "";
+            position: absolute; inset: 0;
+            border-radius: inherit;
+            padding: 2px; /* grosor del borde */
+            background:
+                conic-gradient(from var(--bd-angle),
+                    #404040 0deg,
+                    #404040 90deg,
+                    var(--orange) 100deg,
+                    #ffae6b 110deg,
+                    var(--orange) 120deg,
+                    #404040 130deg,
+                    #404040 360deg);
+            -webkit-mask:
+                linear-gradient(#000 0 0) content-box,
+                linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+                    mask-composite: exclude;
+            opacity: 0;
+            animation: borderSpin 6s linear 1.9s infinite,
+                       borderFade 0.5s ease 1.9s forwards;
+            filter: blur(4px);
+        }
+        @keyframes borderSpin {
+            to { --bd-angle: 360deg; }
+        }
+        @keyframes borderFade {
+            to { opacity: 1; }
+        }
+        @keyframes dateIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes revealSweep {
+            0%   { opacity: 0; filter: blur(12px);
+                   -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+            20%  { opacity: 1; }
+            80%  { filter: blur(0); }
+            100% { opacity: 1; filter: blur(0);
+                   -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .reveal-text { animation: none; opacity: 1; filter: none;
+                -webkit-mask-image: none; mask-image: none; }
+            .reveal-cursor { animation: cursorBlink 0.9s steps(1) infinite; opacity: 1; left: var(--end, calc(100% - 3px)); }
+            .reveal-date { animation: none; opacity: 1; transform: none; }
+            .reveal-date::before { animation: borderFade 0.5s ease forwards; opacity: 1; }
+        }
+        /* cursor: barra del alto del texto, se desliza con la barrida y luego titila */
+        .reveal-cursor {
+            display: inline-block;
+            width: 3px; height: 48px;
+            background: var(--orange);
+            opacity: 0;
+        }
+        .reveal-cursor.run {
+            animation: cursorTravel 1.5s cubic-bezier(0.33, 0, 0.3, 1) forwards,
+                       cursorBlink 0.9s steps(1) 1.5s infinite;
+        }
+        @keyframes cursorBlink {
+            0%, 50%      { opacity: 1; }
+            50.01%, 100% { opacity: 0; }
+        }
+        .sr-only {
+            clip-path: inset(50%);
+            white-space: nowrap;
+            border-width: 0;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            position: absolute;
+            overflow: hidden;
+        }
+        .block-two { display: flex; flex-flow: column; row-gap: 1rem; }
+        .heading {
+            letter-spacing: -2.94px;
+            font-size: 56px;
+            font-weight: 500;
+            line-height: 64px;
+            color: var(--text-white);
+        }
+        .description { letter-spacing: -.045px; font-size: 18px; line-height: 24px; color: var(--text-secondary); }
+        .action-row { display: flex; align-items: center; justify-content: start; padding: 48px 0; overflow: hidden; }
+        .main-btn {
+            appearance: button;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 150px;
+            height: 40px;
+            background-color: #fff;
+            margin: 0;
+            border: 1px solid var(--text-secondary);
+            color: #222;
+            border-radius: 8px;
+            font: 500 16px/24px var(--font-inter); letter-spacing: -.0125em;
+            transition: .2s color ease-out, .2s background-color ease-out;
+        }
+        .main-btn:hover { opacity: .7; }
+        .blocks { position: relative; z-index: 5; display: flex; flex-flow: column; height: 100%; }
+        .block-bottom { display: flex; flex-flow: column;  margin: auto 0 0 0; padding-bottom: 48px; row-gap: 8px; }
+        .block-bottom .heading {
+            font: 500 24px/32px var(--font-inter);
+            letter-spacing: -.3px;
+        }
+        .block-bottom .description {
+            font: 500 16px/24px var(--font-inter); letter-spacing: -.2px;
+            max-width: 320px;
+        }
+    </style>
+</head>
+<body>
+<main class="main">
+    <section class="wrapper">
+        <div class="container">
+            <!-- Render -->
+            <canvas id="matrix"></canvas>
+            <!-- -->
+
+            <span class="dashed dashed-left"></span>
+            <span class="dashed dashed-right"></span>
+
+            <div class="blocks">
+            
+                <!-- Block one ---------------------- -->
+                <!-- Screen readers -->
+                <h1 class="sr-only">Zero Click Bs As</h1>
+                <div class="reveal-wrap">
+                    <div class="reveal-text">Zero Click <span class="text-secondary">Bs As</span> <span class="reveal-cursor"></span></div>
+                    <span class="reveal-date">26</span>
+                </div>
+
+                <!-- Block two ---------------------- -->
+                <div class="block-two">
+                    <span class="heading">Unlocked</span>
+                    <p class="description">Watch 13 sessions from the world's top AI marketing <br> experts on demand. Every keynote. Every deck. One library.</p>
+                </div>
+
+                <div class="action-row">
+                    <button type="button" class="main-btn">Get access now</button>
+                </div>
+
+                <div class="block-bottom">
+                    <h2 class="heading">What's inside the library</h2>
+                    <p class="description">Insights, strategies, and research from the leaders who took the Zero Click Bs As stage.</p>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+</main>
+
+<div id="ui" class="hidden">
+  <h1>matrix · <span>profound</span><span class="close" id="close">×</span></h1>
+  <div class="row"><label>Columnas</label><input id="cols" type="range" min="8" max="48" value="38" step="1"><span class="val" id="colsV">38</span></div>
+  <div class="row"><label>Velocidad</label><input id="speed" type="range" min="0" max="600" value="450" step="5"><span class="val" id="speedV">450</span></div>
+  <div class="row"><label>Densidad</label><input id="trail" type="range" min="1" max="14" value="1.5" step="0.5"><span class="val" id="trailV">1.5</span></div>
+  <div class="row"><label>Glow base</label><input id="base" type="range" min="0" max="40" value="25" step="1"><span class="val" id="baseV">25</span></div>
+  <div class="hint">Two layers: rain falling within the obelisk's fill, and a firefly-like twinkle outlining the edges. <br> Glyph: Profound's icon</div>
+</div>
+
+<div id="toggle" title="Mostrar controles">⋯</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ── SVG embebidos ──────────────────────────────────────────────
+const OBELISK_SVG = `<svg width="126" height="510" viewBox="0 0 126 510" xmlns="http://www.w3.org/2000/svg"><path d="M102.381 50.32L62.971 0L23.49 50.32L0 509.268H125.897L102.381 50.32ZM10.835 498.976C11.358 488.486 33.436 57.282 33.59 54.1C34.929 52.359 48.009 35.752 57.477 23.62V498.976H10.835Z" fill="white"/></svg>`;
+
+const PROFOUND_SVG = `<svg width="55" height="55" viewBox="0 0 55 55" xmlns="http://www.w3.org/2000/svg"><path d="M4.02595e-06 36.685V21.349C-0.000526443 20.2383 0.262632 19.1433 0.767834 18.1541C1.27304 17.1649 2.00585 16.3097 2.906 15.659L22.648 1.409C23.9159 0.493342 25.44 0.000346267 27.004 0H27.066C28.689 0 30.259 0.508 31.567 1.452L51.251 15.659C52.1512 16.3097 52.8841 17.1648 53.3893 18.154C53.8945 19.1432 54.1576 20.2382 54.157 21.349V33.651C54.1576 34.7617 53.8943 35.8567 53.3889 36.8457C52.8835 37.8348 52.1504 38.6897 51.25 39.34L31.527 53.562C30.2318 54.4966 28.6752 54.9997 27.078 55C25.4755 55.0001 23.9135 54.4963 22.613 53.56C20.032 51.701 15.881 48.705 15.881 48.705V29.777C15.881 29.528 16.161 29.384 16.363 29.529L26.901 37.134C27.007 37.211 27.15 37.211 27.256 37.134L40.261 27.748C40.3002 27.7196 40.3322 27.6824 40.3542 27.6393C40.3763 27.5961 40.3877 27.5484 40.3877 27.5C40.3877 27.4516 40.3763 27.4039 40.3542 27.3607C40.3322 27.3176 40.3002 27.2804 40.261 27.252L27.256 17.866C27.2043 17.8287 27.1422 17.8086 27.0785 17.8086C27.0148 17.8086 26.9527 17.8287 26.901 17.866L0.482004 36.933C0.436506 36.9659 0.382798 36.9855 0.326831 36.9897C0.270864 36.9939 0.214823 36.9826 0.164915 36.9569C0.115008 36.9312 0.0731844 36.8922 0.044077 36.8442C0.0149696 36.7962 -0.000284776 36.7411 4.02595e-06 36.685Z" fill="white"/></svg>`;
+
+// ── Rasterizar SVG → CanvasTexture ─────────────────────────────
+function svgToTexture(svgString, w, h, pad = 0) {
+  return new Promise((resolve) => {
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+      const availW = w * (1 - pad * 2), availH = h * (1 - pad * 2);
+      const r = Math.min(availW / img.width, availH / img.height);
+      const dw = img.width * r, dh = img.height * r;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      URL.revokeObjectURL(url);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = true;
+      tex.anisotropy = 4;
+      resolve(tex);
+    };
+    img.src = url;
+  });
+}
+
+// ── Escena ─────────────────────────────────────────────────────
+const canvas = document.getElementById('matrix');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+const ASPECT = 126 / 510; // ancho/alto del obelisco
+
+const material = new THREE.ShaderMaterial({
+  transparent: true,
+  uniforms: {
+    uMask:   { value: null },
+    uGlyph:  { value: null },
+    uTime:   { value: 0 },
+    uCols:   { value: 38 },                       // columnas dentro del recuadro
+    uRows:   { value: 154 },                        // se recalcula para celdas cuadradas
+    uRes:    { value: new THREE.Vector2(1, 1) },
+    uAspect: { value: ASPECT },
+    uSpeed:  { value: 4.5 },
+    uTrail:  { value: 1.5 },
+    uBase:   { value: 0.25 },
+    uColor:  { value: new THREE.Color(0xffffff) }
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */`
+    precision highp float;
+    uniform sampler2D uMask, uGlyph;
+    uniform float uTime, uSpeed, uTrail, uBase, uAspect, uCols, uRows;
+    uniform vec2 uRes;
+    uniform vec3 uColor;
+    varying vec2 vUv;
+
+    float hash(float n){ return fract(sin(n * 127.1) * 43758.5453); }
+
+    void main(){
+      // Encaje "contain" del recuadro del obelisco, sin deformar
+      float screenAspect = uRes.x / uRes.y;
+      vec2 c = vUv - 0.5;
+      if (screenAspect > uAspect) c.x *= screenAspect / uAspect;
+      else                        c.y *= uAspect / screenAspect;
+      vec2 fitUv = c + 0.5;
+
+      if (fitUv.x < 0.0 || fitUv.x > 1.0 || fitUv.y < 0.0 || fitUv.y > 1.0){
+        gl_FragColor = vec4(0.0); return;
+      }
+
+      vec2 grid = vec2(uCols, uRows);
+      vec2 cell = floor(fitUv * grid);
+      vec2 inCell = fract(fitUv * grid);
+
+      // Brillo del obelisco en el centro de la celda
+      vec2 sampleUv = vec2((cell.x + 0.5) / grid.x, (cell.y + 0.5) / grid.y);
+      float mask = texture2D(uMask, sampleUv).a;
+      mask = smoothstep(0.2, 0.55, mask);
+      if (mask < 0.01){ gl_FragColor = vec4(0.0); return; }
+
+      // ── Detección de borde: comparar la celda con sus 4 vecinas ──
+      vec2 px = 1.0 / grid; // tamaño de una celda en UV
+      float mL = texture2D(uMask, sampleUv + vec2(-px.x, 0.0)).a;
+      float mR = texture2D(uMask, sampleUv + vec2( px.x, 0.0)).a;
+      float mU = texture2D(uMask, sampleUv + vec2(0.0,  px.y)).a;
+      float mD = texture2D(uMask, sampleUv + vec2(0.0, -px.y)).a;
+      // si alguna vecina es mucho más oscura, estamos en un borde
+      float edge = abs(mask - mL) + abs(mask - mR) + abs(mask - mU) + abs(mask - mD);
+      edge = smoothstep(0.25, 0.9, edge);   // 1 = borde, 0 = relleno sólido
+
+      // Glifo nítido: el isotipo dentro de la celda
+      float glyph = texture2D(uGlyph, inCell).a;
+
+      // ── CAPA 1 · Lluvia pareja en grises (sin look Matrix) ──
+      // Varias gotas por columna que caen; brillo gris→blanco→gris a lo largo de cada gota
+      float col = cell.x;
+      float seed = hash(col + 1.7);
+      float speed = (0.6 + seed * 0.8) * uSpeed;
+      float yTop = 1.0 - (cell.y + 0.5) / grid.y;
+      float head = fract(seed + uTime * speed * 0.1);
+
+      // densidad: cuántos ciclos de gota entran a lo largo de la columna
+      float dropCount = 0.5 + uTrail * 0.4;             // slider controla densidad
+      float phase = fract((yTop - head) * dropCount);    // patrón repetido 0..1 por gota
+      float dist = phase;
+
+      float dropLen = 0.5;                                // gotas más cortas: más hueco entre ellas
+      float inDrop = step(dist, dropLen);                // 1 dentro de la gota, 0 en el hueco
+      float t = dist / dropLen;                           // 0..1 a lo largo de la gota
+      float profile = 0.45 + 0.55 * sin(t * 3.14159);    // gris→blanco→gris
+
+      // estela sutil: cola corta justo detrás de la gota, que se desvanece
+      float tailLen = 0.28;                               // largo de la cola
+      float tailT = (dist - dropLen) / tailLen;           // 0 al borde de la gota, 1 al final
+      float tail = (1.0 - clamp(tailT, 0.0, 1.0)) * step(dropLen, dist) * step(dist, dropLen + tailLen);
+      tail = pow(tail, 1.6) * 0.35;                       // suave y discreta
+
+      float rain = uBase + inDrop * profile + tail;
+
+      // ── CAPA 2 · Luciérnagas (en los bordes) — prenden y apagan en su lugar ──
+      float cseed = hash(cell.x * 31.7 + cell.y * 91.3);
+      // ciclo de parpadeo con fase propia por celda, ritmo medio
+      float blink = sin(uTime * 4.5 + cseed * 6.2831);
+      blink = smoothstep(0.1, 1.0, blink);          // pulso suave on/off
+      float twinkle = uBase * 0.6 + blink * 0.95;
+
+      // ── Mezcla según borde vs relleno ──
+      float effect = mix(rain, twinkle, edge);
+      float intensity = mask * glyph * effect;
+      intensity = clamp(intensity, 0.0, 1.2);
+
+      // Grises: el brillo de la gota define el tono (gris→blanco→gris)
+      vec3 rgb = uColor * (0.55 + 0.45 * clamp(effect, 0.0, 1.0));
+      gl_FragColor = vec4(rgb, intensity * 0.8);   // 20% menos de opacidad
+    }
+  `
+});
+
+scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+
+// Texturas: máscara en alta-res; glifo cuadrado nítido con padding
+const maskTex  = await svgToTexture(OBELISK_SVG, 256, 1024, 0.015);
+const glyphTex = await svgToTexture(PROFOUND_SVG, 256, 256, 0.16);
+material.uniforms.uMask.value = maskTex;
+material.uniforms.uGlyph.value = glyphTex;
+
+// Recalcular filas para que las celdas queden CUADRADAS
+function updateRows(){
+  const cols = material.uniforms.uCols.value;
+  const rows = Math.max(1, Math.round(cols / ASPECT)); // alto/ancho
+  material.uniforms.uRows.value = rows;
+}
+updateRows();
+
+// ── Resize + loop ──────────────────────────────────────────────
+function resize(){
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  material.uniforms.uRes.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
+}
+addEventListener('resize', resize); resize();
+
+let t0 = performance.now();
+function loop(now){
+  material.uniforms.uTime.value = (now - t0) / 1000;
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ── Controles ──────────────────────────────────────────────────
+const set = (id, fn) => {
+  const el = document.getElementById(id), out = document.getElementById(id + 'V');
+  const apply = () => { out.textContent = el.value; fn(parseFloat(el.value)); };
+  el.addEventListener('input', apply); apply();
+};
+set('cols',  v => { material.uniforms.uCols.value = v; updateRows(); });
+set('speed', v => material.uniforms.uSpeed.value = v * 0.01);
+set('trail', v => material.uniforms.uTrail.value = v);
+set('base',  v => material.uniforms.uBase.value = v * 0.01);
+
+// Toggle mostrar/ocultar panel
+const ui = document.getElementById('ui');
+const toggle = document.getElementById('toggle');
+const close = document.getElementById('close');
+close.addEventListener('click', () => ui.classList.add('hidden'));
+toggle.addEventListener('click', () => ui.classList.remove('hidden'));
+// atajo: tecla H
+addEventListener('keydown', e => { if (e.key.toLowerCase() === 'h') ui.classList.toggle('hidden'); });
+
+// ── Cursor del texto: recorre hasta el final, sincronizado con la barrida ──
+(function setupReveal(){
+  const el = document.querySelector('.reveal-text');
+  const cursor = document.querySelector('.reveal-cursor');
+  if (!el || !cursor) return;
+  requestAnimationFrame(() => {
+    const end = el.offsetWidth + 4; // ancho del texto + padding inicial
+    cursor.style.setProperty('--end', end + 'px');
+    cursor.classList.add('run');
+  });
+})();
+
+
+</script>
+</body>
+</html>
