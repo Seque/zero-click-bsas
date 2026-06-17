@@ -2,8 +2,7 @@
 
 A Three.js code-rain effect inspired by [Profound's Zero Click](https://www.tryprofound.com/zeroclick/sf), reimagined for Buenos Aires. Falling glyphs — each one Profound's icon — are masked over an SVG silhouette of the Obelisco, with a firefly-like twinkle tracing its edges. The hero text reveals with a left-to-right blur sweep, followed by an animated orange conic border around the date.
 
-![Preview](./preview.gif)
-
+https://github.com/user-attachments/assets/c27dcf2c-c7c4-463c-83f8-bc4f1ad0019c
 
 ## What it does
 
